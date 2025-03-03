@@ -28,6 +28,7 @@ class Requestcreateuser(BaseModel):
     last_name : str
     role : str
     password : str
+    phone_number:str
 
 class Todo(BaseModel):
     access_token : str
@@ -46,6 +47,9 @@ db_dependecy = Annotated[Session,Depends(get_db)]
 class changepasswordreq(BaseModel):
     old_password : str
     new_password : str
+
+class phonenumberreq(BaseModel):
+    phone_number:str
 
 def authenticate_user(username: str, password: str, db: Session):
     data = db.query(Users).filter(Users.username == username).first()
@@ -82,7 +86,8 @@ async def create_user(db:db_dependecy,create_user_req : Requestcreateuser):
         last_name = create_user_req.last_name,
         role = create_user_req.role,
         hashed_password = hashed.hash(create_user_req.password),
-        is_active=True
+        is_active=True,
+        phone_number = create_user_req.phone_number
     )
     db.add(create_user_model)
     db.commit()
@@ -124,5 +129,16 @@ async def update_password(user:user_dependency,db:db_dependecy,req:changepasswor
     if hashed.verify(req.new_password,data.hashed_password):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Use different Password Not the old one")
     data.hashed_password = hashed.hash(req.new_password)
+    db.commit()
+    return {'Message':'Updated Successfully'}
+
+@router.put('/phonenumber')
+async def update_number(user:user_dependency,db:db_dependecy,req:phonenumberreq):
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authorixed")
+    data = db.query(Users).filter(Users.id==user.get('user_id')).first()
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    data.phone_number = req.phone_number
     db.commit()
     return {'Message':'Updated Successfully'}
