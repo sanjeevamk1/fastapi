@@ -1,7 +1,7 @@
 from fastapi import APIRouter,Depends,Path,HTTPException
 from pydantic import BaseModel, Field
-from models import Todos
-from database import sessionlocal
+from ..models import Todos
+from ..database import sessionlocal
 from typing import Annotated
 from sqlalchemy.orm import session
 from starlette import status
@@ -26,8 +26,8 @@ user_dependency = Annotated[dict,Depends(verify_user)]
 @router.get('/todo',status_code=status.HTTP_200_OK)
 async def get_data(user:user_dependency,db:db_dependecy):
     if user is None:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not Authorixed")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not Authorixed")
     if user.get('role') == 'Admin':
         return db.query(Todos).all()
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not an Admin user")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not an Admin user")
