@@ -16,7 +16,7 @@ def test_get_all(test_todos):
     'description' : 'Pytest working',
     'priority' : 3,
     'completed' : True,
-    'owner_id' :10,
+    'owner_id' :1,
     'id':1}]
 
 def test_get_one(test_todos):
@@ -26,7 +26,7 @@ def test_get_one(test_todos):
     'description' : 'Pytest working',
     'priority' : 3,
     'completed' : True,
-    'owner_id' :10,
+    'owner_id' :1,
     'id':1}
 
 def test_get_not_found():
@@ -41,7 +41,7 @@ def test_create_todo(test_todos):
         "description" :"test create",
         "priority":3,
         "completed":False,
-        "owner_id":10
+        "owner_id":1
     }
 
     response = client.post('/todos',json = request_body)
@@ -58,7 +58,7 @@ def test_update_todo(test_todos):
         "description" :"test create",
         "priority":3,
         "completed":False,
-        "owner_id": 10
+        "owner_id": 1
     }
 
     response = client.put('/todos/1',json = request_body)

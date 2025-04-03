@@ -22,7 +22,7 @@ def test_todos():
     description = "Pytest working",
     priority = 3,
     completed = True,
-    owner_id =10
+    owner_id =1
     )
     db = Test_session()
     db.add(todo)
@@ -35,12 +35,12 @@ def test_todos():
 @pytest.fixture
 def test_user():
     user = Users(
-        username = "suhas123",
-        email="suhas123@gmail.com",
-        first_name = "suhas",
-        last_name = "Garlapad",
-        hashed_password = hashed.hash("SUhas@123"),
-        role="Admin",
+        username = "testuser",
+        email="test@gmail.com",
+        first_name = "test",
+        last_name = "A",
+        hashed_password = hashed.hash("test@123"),
+        role="admin",
         phone_number = 87889789978
     )
     db = Test_session()
@@ -58,5 +58,5 @@ def override_get_db():
     finally:
         db.close()
 def override_get_user():
-    return {'username':'testsuhas','user_id':10,'role':'Admin'}
+    return {'username':'testsuhas','user_id':1,'role':'Admin'}
 
