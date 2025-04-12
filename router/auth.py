@@ -2,14 +2,16 @@ from datetime import timedelta,datetime,timezone
 from enum import verify
 from typing import Annotated
 from jose import jwt,JWTError
-from fastapi import APIRouter, Depends,HTTPException
+from fastapi import APIRouter, Depends,HTTPException,Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import  status
 from ..database import sessionlocal
 from ..models import Users
 from passlib.context import CryptContext
+from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
+
 
 
 Secret_key='b0057a5aae931b5facb262e780180fc3f7bdc3c8d7b04ab7a52aa7562b2fe89a'
@@ -43,6 +45,21 @@ def get_db():
 
 
 db_dependecy = Annotated[Session,Depends(get_db)]
+templates = Jinja2Templates(directory="todo_app/templates")
+
+@router.get('/login')
+def login_page(request : Request):
+    return templates.TemplateResponse("login.html",{"request":request})
+
+@router.get('/register')
+def register_page(request : Request):
+    return templates.TemplateResponse("register.html",{"request":request})
+
+##page
+
+
+
+
 
 class changepasswordreq(BaseModel):
     old_password : str
@@ -62,18 +79,18 @@ def generate_token(username: str, user_id: int, role:str,minute: int):
     payload = {'sub': username, 'id': user_id,'role':role, 'exp': datetime.now(timezone.utc) + timedelta(minutes=minute)}
     return jwt.encode(payload, Secret_key, algorithm=Algorithm)
 
-def verify_user(token:Annotated[str,Depends(bearer)]):
+async def verify_user(token:Annotated[str,Depends(bearer)]):
     try:
         data = jwt.decode(token,Secret_key,algorithms=[Algorithm])
         username = data.get('sub')
         user_id = data.get('id')
         role =  data.get('role')
         if user_id is None or username is None:
-            return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not able to verify JWT")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not able to verify JWT")
         else:
             return {'username':username,'user_id':user_id,'role':role}
     except JWTError:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not able to verify JWT")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not able to verify JWT")
 
 user_dependency = Annotated[dict,Depends(verify_user)]
 

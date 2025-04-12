@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,Path,HTTPException,status
+from fastapi import APIRouter,Depends,Path,HTTPException,Request
 from pydantic import BaseModel, Field
 from ..models import Todos
 from ..database import sessionlocal
@@ -6,9 +6,11 @@ from typing import Annotated
 from starlette import status
 from sqlalchemy.orm import session
 from .auth import verify_user
+from fastapi.templating import Jinja2Templates
+from starlette.responses import RedirectResponse
+
 
 app=APIRouter()
-
 
 
 def get_db():
@@ -39,8 +41,54 @@ class Todorequest(BaseModel):
 
 db_dependecy = Annotated[session,Depends(get_db)]
 user_dependency = Annotated[dict,Depends(verify_user)]
+template = Jinja2Templates(directory='todo_app/templates')
 
-@app.get('/',status_code=status.HTTP_200_OK)
+def redirect_to_login():
+    redirect_response  = RedirectResponse(url = '/auth/login',status_code=status.HTTP_302_FOUND)
+    redirect_response.delete_cookie(key='access_token')
+    return  redirect_response
+##page
+
+
+@app.get('/todos/todo-page')
+async def todo_page(request:Request,db:db_dependecy):
+    try:
+        user = await verify_user(request.cookies.get('access_token'))
+        if user is None:
+            return redirect_to_login()
+        todos = db.query(Todos).filter(Todos.owner_id == user.get('user_id')).all()
+        return template.TemplateResponse('todo.html',{'request':request,'todos':todos,'user':user})
+
+    except:
+        return redirect_to_login()
+
+
+@app.get('/todos/add-todo')
+async def addtodo(request:Request):
+    try:
+        user =  await verify_user(request.cookies.get('access_token'))
+        if user is None:
+            return  redirect_to_login()
+        return template.TemplateResponse('add-todo.html',{'request':request,'user':user})
+    except:
+        return redirect_to_login()
+
+@app.get('/todos/edit-todo/{todo_id}')
+async def edit_todo(request:Request,todo_id:int,db:db_dependecy):
+    try:
+        user= await verify_user(request.cookies.get('access_token'))
+        if user is None:
+            return redirect_to_login()
+        todo = db.query(Todos).filter(Todos.id==todo_id).first()
+
+        return template.TemplateResponse('edit-todo.html',{'request':request,'todo':todo,'user':'user'})
+
+    except:
+        return redirect_to_login()
+
+        ##func
+
+@app.get('/todos',status_code=status.HTTP_200_OK)
 async def get_data(user:user_dependency,db:db_dependecy):
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not Authorixed")
@@ -57,6 +105,7 @@ async def get_id(user:user_dependency,db:db_dependecy,todo_id:int=Path(gt=0)):
 
 @app.post('/todos',status_code=status.HTTP_201_CREATED)
 async def create_todo(user:user_dependency,db:db_dependecy,req:Todorequest):
+    print(user,db,req)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Not Authorixed")
     model = Todos(**req.model_dump(),owner_id=user.get('user_id'))
